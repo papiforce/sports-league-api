@@ -5,22 +5,25 @@ const logger = require("../config/logger");
 const { httpError } = require("../utils");
 
 const add = async (req) => {
-  const { itemId, userId, quantity, address, duration } = req.body;
+  const { itemsIds, userId, address, duration } = req.body;
 
   if (!Number.isInteger(parseInt(duration)) || duration > 7 || duration < 0) {
     throw new httpError(404, "La durée de location n'est pas correcte'");
   }
 
-  const itemById = await ItemModel.findById(itemId);
+  const itemsById = await ItemModel.find({
+    _id: { $in: itemsIds.map((item) => item.itemId) },
+  });
 
-  if (!itemById) {
-    throw new httpError(404, "Cet article n'existe pas");
+  if (!itemsById) {
+    throw new httpError(404, "L'un des articles sélectionnés n'existe pas");
   }
 
   if (
-    !Number.isInteger(quantity) ||
-    quantity < 0 ||
-    quantity > itemById.quantity
+    itemsIds.some(
+      (item, idx) =>
+        item.quantity <= 0 || item.quantity > itemsById[idx].quantity
+    )
   ) {
     throw new httpError(404, "La quantité saisie n'est pas correcte");
   }
@@ -36,17 +39,27 @@ const add = async (req) => {
 
   const orderDoc = OrderModel({
     ...req.body,
-    address: req.user.address ?? address,
+    address: req.user && req.user.address ? req.user.address : address,
     sendBackDate: date,
+    price: itemsIds.map((item) => item.price).reduce((a, b) => a + b, 0),
   });
 
   await orderDoc.save();
 
-  const updatedItem = Object.assign(itemById, {
-    quantity: itemById.quantity - quantity,
-  });
+  const updatedItems = itemsById.map((item, idx) =>
+    Object.assign(item, {
+      quantity: item.quantity - itemsIds[idx].quantity,
+    })
+  );
 
-  await updatedItem.save();
+  const docs = await Promise.all(updatedItems.map((item) => item.save()));
+
+  if (!docs) {
+    throw new httpError(
+      403,
+      "Une erreur est survenue lors de la mise à jour des articles"
+    );
+  }
 
   logger.info(`${req.originalUrl} : 200 (POST)`);
 
@@ -55,7 +68,7 @@ const add = async (req) => {
 
 const update = async (req) => {
   const { id } = req.params;
-  const { address, status, date } = req.body;
+  const { address, status } = req.body;
 
   const order = await OrderModel.findById(id);
 
@@ -65,7 +78,7 @@ const update = async (req) => {
 
   const updatedOrder = Object.assign(order, {
     ...order,
-    address,
+    address: req.user.address ?? address,
     status: status ?? order.status,
   });
 
