@@ -16,6 +16,11 @@ const orderSchema = new Schema({
     ref: "User",
     trim: true,
   },
+  description: {
+    type: String,
+    required: false,
+    trim: true,
+  },
   status: {
     type: String,
     enum: [
