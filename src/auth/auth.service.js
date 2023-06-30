@@ -5,7 +5,7 @@ const logger = require("../config/logger");
 const jwt = require("jsonwebtoken");
 
 const signUp = async (req) => {
-  const { firstname, lastname, email, password } = req.body;
+  const { email, password } = req.body;
 
   const userByEmail = await UserModel.findOne({ email });
 
@@ -53,22 +53,18 @@ const signIn = async (req) => {
 
   return {
     token,
-    userId: user._id,
+    user,
     isLogged: true,
   };
 };
 
 const me = async (req) => {
-  const userUpToDate = await UserModel.findById(req.userId);
-
-  const { password, ...userInfos } = userUpToDate;
-
-  delete userInfos._doc.password;
+  const userUpToDate = await UserModel.findById(req.user._id);
 
   logger.info(`${req.originalUrl} : 200`);
 
   return {
-    user: userInfos._doc,
+    user: userUpToDate,
     isLogged: true,
   };
 };

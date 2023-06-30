@@ -17,7 +17,16 @@ const updateUserProfile = errorHandler(async (req, res) => {
   return res.status(200).json(data);
 });
 
+const removeUsers = errorHandler(async (req, res) => {
+  const data = await userService.removeMany(req);
+
+  if (!data) return res.status(404).json({ error: "Aucun utilisateur" });
+
+  return res.status(200).json(data);
+});
+
 module.exports = {
   getAllUsers,
   updateUserProfile,
+  removeUsers,
 };

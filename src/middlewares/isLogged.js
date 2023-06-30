@@ -11,6 +11,10 @@ const isLogged = errorHandler(async (req, res, next) => {
   try {
     const sign = jwt.verify(token, process.env.TOKEN_KEY);
 
+    if (!sign) {
+      throw new httpError(404, "Token invalide");
+    }
+
     const currentUser = await UserModel.findById(sign.userId);
 
     if (!currentUser) {

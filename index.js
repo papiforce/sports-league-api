@@ -10,8 +10,24 @@ const port = process.env.PORT;
 
 databaseConnection();
 
+const whiteList = ["http://localhost:3000"];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    var options;
+    if (!whiteList.indexOf(origin) !== -1) {
+      options = { origin: true };
+    } else {
+      options = { origin: false };
+    }
+    callback(null, options);
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 app.use("/api", routes);
 
 app.listen(port, () => {

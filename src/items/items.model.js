@@ -30,6 +30,11 @@ const itemSchema = new Schema({
     type: Number,
     required: true,
   },
+  description: {
+    type: String,
+    required: true,
+    trim: true,
+  },
 });
 
 const ItemModel = model("Item", itemSchema);

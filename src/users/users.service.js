@@ -10,7 +10,11 @@ const getAll = async (req) => {
     ...(onlyActive && { isDelete: false }),
     ...(withoutFounder && { roles: { $nin: ["FOUNDER"] } }),
     ...(search && {
-      $or: [{ username: { $regex: search } }, { email: { $regex: search } }],
+      $or: [
+        { firstname: { $regex: search, $options: "i" } },
+        { lastname: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ],
     }),
   })
     .limit(limit)
@@ -45,7 +49,24 @@ const updateUserProfile = async (req) => {
   return updatedUser;
 };
 
+const removeMany = async (req) => {
+  const { ids } = req.body;
+
+  const users = await UserModel.deleteMany({
+    _id: { $in: ids[0] },
+  });
+
+  if (!users) {
+    throw new httpError(403, "L'un des utilisateurs selectionnés n'existe pas");
+  }
+
+  logger.info(`${req.originalUrl} : 200 (DELETE)`);
+
+  return { isDelete: true };
+};
+
 module.exports = {
   getAll,
   updateUserProfile,
+  removeMany,
 };
